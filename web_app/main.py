@@ -40,6 +40,11 @@ async def get_eap_data():
     # Or return full list and let frontend build tree
     return JSONResponse(content=items)
 
+@app.get("/api/composition/{code}")
+async def get_composition_json(code: str):
+    data = service.get_composition(code)
+    return JSONResponse(content=data)
+
 @app.get("/api/item/{code}", response_class=HTMLResponse)
 async def get_item_details(request: Request, code: str):
     # Return HTML snippet for Inspector

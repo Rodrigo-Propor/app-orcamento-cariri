@@ -279,4 +279,27 @@ class OrcamentoService:
         return self.sanitize_for_json(self.po_items)
 
     def get_composition(self, code):
-        return self.sanitize_for_json(self.composition_details.get(code, []))
+        # Prefer pre-calculated details if available
+        if code in self.composition_details:
+             details = self.composition_details[code]
+        elif code in self.comp_map:
+            # Generate on the fly if not in PO items but requested via API
+            details = []
+            for child in self.comp_map[code]:
+                c_price = self.sinapi_prices.get(child['code'], 0.0)
+                details.append({
+                    "code": child['code'],
+                    "desc": child['desc'],
+                    "unit": child['unit'],
+                    "coef": child['coef'],
+                    "unit_price": c_price,
+                    "total": c_price * child['coef']
+                })
+        else:
+            return []
+
+        # Enhance with has_children flag
+        for d in details:
+            d['has_children'] = d['code'] in self.comp_map
+        
+        return self.sanitize_for_json(details)

@@ -47,12 +47,22 @@
     </header>
 
     <!-- Main Content -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="flex-1 flex overflow-hidden" id="main-container">
         
         <!-- Left Sidebar: EAP -->
-        <aside class="w-1/4 max-w-sm bg-white border-r flex flex-col overflow-hidden">
+        <aside id="left-sidebar" style="width: 300px;" class="bg-white border-r flex flex-col overflow-hidden">
             <div class="p-3 border-b bg-gray-50 font-semibold text-xs text-gray-600 uppercase flex justify-between items-center">
-                <span>Estrutura Analítica (EAP)</span>
+                <div class="flex items-center gap-2">
+                    <span>EAP</span>
+                    <div class="flex bg-white rounded border shadow-sm">
+                        <button onclick="toggleEAP(true)" class="px-1.5 py-0.5 hover:bg-gray-100 text-gray-500 border-r" title="Expandir Tudo">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                        <button onclick="toggleEAP(false)" class="px-1.5 py-0.5 hover:bg-gray-100 text-gray-500" title="Recolher (Nível 1)">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                        </button>
+                    </div>
+                </div>
                 <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full" id="item-count">0 itens</span>
             </div>
             <div class="p-2 border-b">
@@ -63,6 +73,9 @@
                 <div class="text-gray-400 text-sm text-center mt-10">Carregando itens...</div>
             </div>
         </aside>
+
+        <!-- Left Resizer -->
+        <div id="resizer-left" class="w-1 bg-gray-200 cursor-col-resize hover:bg-blue-400 z-10 transition-colors"></div>
 
         <!-- Center Area -->
         <main class="flex-1 flex flex-col min-w-0 bg-white relative">
@@ -87,8 +100,11 @@
 
         </main>
 
+        <!-- Right Resizer -->
+        <div id="resizer-right" class="w-1 bg-gray-200 cursor-col-resize hover:bg-blue-400 z-10 transition-colors"></div>
+
         <!-- Right Sidebar: Inspector (Only for Grid View) -->
-        <aside id="inspector-panel" class="w-80 bg-white border-l flex flex-col overflow-hidden shadow-lg z-20 transition-transform duration-300">
+        <aside id="inspector-panel" style="width: 320px;" class="bg-white border-l flex flex-col overflow-hidden shadow-lg z-20 transition-transform duration-300">
             <div class="p-3 border-b bg-gray-50 font-semibold text-sm text-gray-700 flex justify-between items-center">
                 <span>Inspetor de Detalhes</span>
                 <span class="text-xs text-gray-400">Selecione um item</span>
@@ -113,6 +129,7 @@
             const viewGrid = document.getElementById('grid-view');
             const viewDetail = document.getElementById('detail-view');
             const inspector = document.getElementById('inspector-panel');
+            const resizerRight = document.getElementById('resizer-right');
 
             if (mode === 'grid') {
                 // Activate Grid
@@ -125,6 +142,7 @@
                 viewGrid.classList.remove('hidden');
                 viewDetail.classList.add('hidden');
                 inspector.classList.remove('hidden'); // Show sidebar
+                resizerRight.classList.remove('hidden'); // Show resizer
             } else {
                 // Activate Detail
                 btnDetail.classList.add('bg-white', 'shadow', 'text-gray-700', 'font-bold');
@@ -136,10 +154,87 @@
                 viewGrid.classList.add('hidden');
                 viewDetail.classList.remove('hidden');
                 inspector.classList.add('hidden'); // Hide sidebar
+                resizerRight.classList.add('hidden'); // Hide resizer
             }
         }
 
+        function toggleEAP(expand) {
+            const items = document.querySelectorAll('#eap-list div');
+            const filterInput = document.getElementById('eap-filter');
+            filterInput.value = ''; // Clear filter to avoid confusion
+
+            items.forEach(div => {
+                const level = parseInt(div.getAttribute('data-level') || '0');
+                if (expand) {
+                    div.style.display = 'flex';
+                } else {
+                    // Collapse: Show only Level 0 (1, 2, 3...) and maybe Level 1 (1.1, 1.2...) depending on preference.
+                    // Let's show only Level 0 for maximum collapse.
+                    if (level === 0) {
+                        div.style.display = 'flex';
+                    } else {
+                        div.style.display = 'none';
+                    }
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Resizing Logic ---
+            const resizerLeft = document.getElementById('resizer-left');
+            const leftSidebar = document.getElementById('left-sidebar');
+            const resizerRight = document.getElementById('resizer-right');
+            const rightSidebar = document.getElementById('inspector-panel');
+
+            // Left Resizer
+            resizerLeft.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                document.addEventListener('mousemove', resizeLeft);
+                document.addEventListener('mouseup', stopResizeLeft);
+                document.body.style.cursor = 'col-resize';
+                resizerLeft.classList.add('bg-blue-400');
+            });
+
+            function resizeLeft(e) {
+                const newWidth = e.clientX - leftSidebar.getBoundingClientRect().left;
+                if (newWidth > 150 && newWidth < 600) {
+                    leftSidebar.style.width = `${newWidth}px`;
+                }
+            }
+
+            function stopResizeLeft() {
+                document.removeEventListener('mousemove', resizeLeft);
+                document.removeEventListener('mouseup', stopResizeLeft);
+                document.body.style.cursor = 'default';
+                resizerLeft.classList.remove('bg-blue-400');
+                if(gridApi) gridApi.sizeColumnsToFit(); // Optional: adjust grid
+            }
+
+            // Right Resizer
+            resizerRight.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                document.addEventListener('mousemove', resizeRight);
+                document.addEventListener('mouseup', stopResizeRight);
+                document.body.style.cursor = 'col-resize';
+                resizerRight.classList.add('bg-blue-400');
+            });
+
+            function resizeRight(e) {
+                const newWidth = document.body.clientWidth - e.clientX;
+                if (newWidth > 200 && newWidth < 800) {
+                    rightSidebar.style.width = `${newWidth}px`;
+                }
+            }
+
+            function stopResizeRight() {
+                document.removeEventListener('mousemove', resizeRight);
+                document.removeEventListener('mouseup', stopResizeRight);
+                document.body.style.cursor = 'default';
+                resizerRight.classList.remove('bg-blue-400');
+                if(gridApi) gridApi.sizeColumnsToFit();
+            }
+            // --- End Resizing Logic ---
+
             const gridDiv = document.querySelector('#myGrid');
             
             const columnDefs = [
@@ -272,23 +367,82 @@
                 list.innerHTML = '';
                 countBadge.textContent = `${data.length} itens`;
                 
-                data.forEach(item => {
+                data.forEach((item, index) => {
                     if (item.type === 'HEADER' || (item.idx)) {
                         const div = document.createElement('div');
-                        div.className = "cursor-pointer hover:bg-blue-50 px-2 py-1.5 rounded text-sm truncate transition-colors duration-150 group flex items-center gap-2";
+                        // Base styling
+                        div.className = "cursor-pointer hover:bg-blue-50 px-2 py-1.5 rounded text-sm truncate transition-colors duration-150 group flex items-center gap-2 select-none";
                         
+                        // Hierarchical Data Attributes
+                        div.setAttribute('data-idx', item.idx);
+                        const parts = item.idx.split('.');
+                        const parentIdx = parts.length > 1 ? parts.slice(0, -1).join('.') : '';
+                        div.setAttribute('data-parent', parentIdx);
+
+                        // Indentation
                         const dots = (item.idx.match(/\./g) || []).length;
-                        div.style.paddingLeft = `${dots * 12 + 8}px`;
+                        div.style.paddingLeft = `${dots * 12 + 4}px`; // Reduced base padding to fit arrow
+                        div.setAttribute('data-level', dots);
+                        
+                        // Check for children
+                        let hasChildren = false;
+                        if (index < data.length - 1) {
+                            const nextItem = data[index + 1];
+                            if (nextItem.idx.startsWith(item.idx + '.')) {
+                                hasChildren = true;
+                            }
+                        }
+                        
+                        // Also check if it is a composition that can be expanded dynamically
+                        const isComposition = item.type !== 'HEADER' && item.code;
+                        if (isComposition) {
+                             // We assume it might have children if it's an item (lazy check later)
+                             // Actually, for PO items, we know if they are compositions if we check backend, 
+                             // but here we might just want to show the arrow if it's a valid item code.
+                             // However, user wants "seta para abrir". 
+                             // If we don't know for sure, we might show it and then find empty.
+                             // Ideally backend sends "has_children" for PO items too. 
+                             // But let's assume all valid ITEMS with codes might be compositions.
+                             // Better yet, let's treat it as hasChildren if type is ITEM.
+                             // But we need to distinguish between "already loaded children (PO subitems)" and "lazy composition".
+                             if (!hasChildren) {
+                                 hasChildren = true; // Potentially expandable
+                                 div.setAttribute('data-lazy', 'true');
+                                 div.setAttribute('data-code', item.code);
+                             }
+                        }
+
+                        // Toggle Button or Spacer
+                        const toggleSpan = document.createElement('span');
+                        toggleSpan.className = "w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400";
+                        if (hasChildren) {
+                            toggleSpan.innerHTML = `<svg class="w-3 h-3 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+                            toggleSpan.classList.add('hover:text-gray-700', 'cursor-pointer');
+                            div.setAttribute('data-expanded', 'true'); // Default open
+                            
+                            toggleSpan.onclick = (e) => {
+                                e.stopPropagation();
+                                toggleNode(item.idx, div);
+                            };
+                        } else {
+                            toggleSpan.innerHTML = `<span class="w-1 h-1 rounded-full bg-gray-300"></span>`; // Dot for leaf
+                        }
+                        div.appendChild(toggleSpan);
+
+                        // Content
+                        const contentSpan = document.createElement('span');
+                        contentSpan.className = "truncate flex-1 flex gap-2 items-center";
                         
                         if(item.type === 'HEADER') {
                             div.classList.add('font-bold', 'text-gray-800');
-                            div.innerHTML = `<span class="text-gray-400 text-xs w-12 flex-shrink-0 text-right">${item.idx}</span> <span class="truncate">${item.desc}</span>`;
+                            contentSpan.innerHTML = `<span class="text-gray-400 text-xs w-10 flex-shrink-0 text-right">${item.idx}</span> <span class="truncate">${item.desc}</span>`;
                         } else {
                             div.classList.add('text-gray-600');
-                            div.innerHTML = `<span class="text-gray-400 text-xs w-12 flex-shrink-0 text-right font-mono">${item.idx}</span> <span class="truncate group-hover:text-blue-700">${item.desc}</span>`;
+                            contentSpan.innerHTML = `<span class="text-gray-400 text-xs w-10 flex-shrink-0 text-right font-mono">${item.idx}</span> <span class="truncate group-hover:text-blue-700">${item.desc}</span>`;
                         }
+                        div.appendChild(contentSpan);
                         
-                        // Unified Click Handler
+                        // Unified Click Handler (Selection)
                         div.onclick = () => {
                             // Highlight in EAP
                             document.querySelectorAll('#eap-list div').forEach(d => d.classList.remove('bg-blue-100', 'text-blue-800'));
@@ -318,6 +472,154 @@
                         };
 
                         list.appendChild(div);
+                    }
+                });
+            }
+
+            // Recursive Toggle Logic
+            async function toggleNode(parentIdx, parentDiv) {
+                const isExpanded = parentDiv.getAttribute('data-expanded') === 'true';
+                const newState = !isExpanded;
+                
+                // Check if lazy load needed
+                if (newState && parentDiv.getAttribute('data-lazy') === 'true' && parentDiv.getAttribute('data-loaded') !== 'true') {
+                    const code = parentDiv.getAttribute('data-code');
+                    
+                    // Show loading state
+                    const svg = parentDiv.querySelector('svg');
+                    if(svg) svg.classList.add('animate-spin');
+
+                    try {
+                        const response = await fetch(`/api/composition/${code}`);
+                        const children = await response.json();
+                        
+                        if (children.length > 0) {
+                            parentDiv.setAttribute('data-loaded', 'true');
+                            
+                            // Append children
+                            const list = document.getElementById('eap-list');
+                            const parentLevel = parseInt(parentDiv.getAttribute('data-level'));
+                            
+                            // Find insertion point: after this div, but before any next sibling that is NOT a descendant of this div (conceptually)
+                            // Since we are expanding a leaf (in PO terms), we can just insert after it.
+                            // But if we already expanded it before, we wouldn't be here (data-loaded check).
+                            // Wait, if we are expanding a node, we should insert its children immediately after it.
+                            
+                            // Reverse loop to insert after
+                            // Actually, just inserting after parentDiv is enough, but we need to reverse list to keep order or insert one by one in reverse?
+                            // appendChild appends to end. insertBefore does the trick.
+                            
+                            let referenceNode = parentDiv.nextSibling;
+                            
+                            children.forEach(child => {
+                                const div = document.createElement('div');
+                                div.className = "cursor-pointer hover:bg-blue-50 px-2 py-1.5 rounded text-sm truncate transition-colors duration-150 group flex items-center gap-2 select-none";
+                                
+                                // Create synthetic IDX for visual hierarchy
+                                const childIdx = `${parentIdx}.${child.code}`;
+                                div.setAttribute('data-idx', childIdx);
+                                div.setAttribute('data-parent', parentIdx);
+                                div.setAttribute('data-level', parentLevel + 1);
+                                div.setAttribute('data-code', child.code);
+                                if (child.has_children) {
+                                    div.setAttribute('data-lazy', 'true');
+                                }
+                                
+                                div.style.paddingLeft = `${(parentLevel + 1) * 12 + 4}px`;
+                                div.style.backgroundColor = '#f8fafc'; // Slightly different bg for composition items?
+
+                                // Toggle/Spacer
+                                const toggleSpan = document.createElement('span');
+                                toggleSpan.className = "w-4 h-4 flex items-center justify-center flex-shrink-0 text-gray-400";
+                                if (child.has_children) {
+                                    toggleSpan.innerHTML = `<svg class="w-3 h-3 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+                                    toggleSpan.classList.add('hover:text-gray-700', 'cursor-pointer');
+                                    toggleSpan.onclick = (e) => {
+                                        e.stopPropagation();
+                                        toggleNode(childIdx, div);
+                                    };
+                                } else {
+                                    toggleSpan.innerHTML = `<span class="w-1 h-1 rounded-full bg-gray-300"></span>`;
+                                }
+                                div.appendChild(toggleSpan);
+
+                                // Content
+                                const contentSpan = document.createElement('span');
+                                contentSpan.className = "truncate flex-1 flex gap-2 items-center text-gray-500";
+                                contentSpan.innerHTML = `<span class="text-xs w-14 flex-shrink-0 text-right font-mono text-gray-400">${child.code}</span> <span class="truncate hover:text-blue-600">${child.desc}</span>`;
+                                div.appendChild(contentSpan);
+
+                                // Click handler
+                                div.onclick = () => {
+                                     document.querySelectorAll('#eap-list div').forEach(d => d.classList.remove('bg-blue-100', 'text-blue-800'));
+                                     div.classList.add('bg-blue-100', 'text-blue-800');
+                                     // Open detail
+                                     if(currentMode === 'detail') {
+                                         htmx.ajax('GET', `/api/item/${child.code}`, '#detail-content');
+                                     }
+                                };
+
+                                // Insert
+                                list.insertBefore(div, referenceNode);
+                                // Since we insertBefore referenceNode, the next child should be inserted before referenceNode too (after the one we just added? No).
+                                // If we iterate children: [A, B, C].
+                                // Insert A before Ref. List: Parent, A, Ref.
+                                // Insert B before Ref. List: Parent, A, B, Ref.
+                                // Correct.
+                            });
+
+                        } else {
+                            // No children found (maybe a material?)
+                            parentDiv.removeAttribute('data-lazy');
+                            // Remove arrow
+                            const span = parentDiv.querySelector('span:first-child');
+                            if(span) span.innerHTML = `<span class="w-1 h-1 rounded-full bg-gray-300"></span>`;
+                            // And return, don't expand
+                            if(svg) svg.classList.remove('animate-spin');
+                            return; 
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        if(svg) svg.classList.remove('animate-spin');
+                    }
+                }
+
+                parentDiv.setAttribute('data-expanded', newState);
+                
+                // Rotate Icon
+                const svg = parentDiv.querySelector('svg');
+                if(svg) {
+                    svg.style.transform = newState ? 'rotate(0deg)' : 'rotate(-90deg)';
+                }
+
+                if (!newState) {
+                    // CLOSE: Hide all descendants recursively
+                    const allItems = document.querySelectorAll(`#eap-list div`);
+                    allItems.forEach(div => {
+                        const idx = div.getAttribute('data-idx');
+                        if (idx && idx.startsWith(parentIdx + '.')) {
+                            div.style.display = 'none';
+                            // Also collapse them? Optional.
+                        }
+                    });
+                } else {
+                    // OPEN: Show immediate children, and recurse if they are open
+                    showChildren(parentIdx);
+                }
+            }
+
+            function showChildren(parentIdx) {
+                // Find immediate children
+                const allItems = document.querySelectorAll(`#eap-list div`);
+                allItems.forEach(div => {
+                    const pIdx = div.getAttribute('data-parent');
+                    if (pIdx === parentIdx) {
+                        div.style.display = 'flex';
+                        // If this child is also expanded, show its children
+                        if (div.getAttribute('data-expanded') === 'true') {
+                            showChildren(div.getAttribute('data-idx'));
+                        }
                     }
                 });
             }

@@ -5,5 +5,5 @@ pip install -r requirements.txt
 echo.
 echo Iniciando servidor...
 echo Acesse http://127.0.0.1:8000 no seu navegador.
-uvicorn web_app.main:app --reload
+python -m uvicorn web_app.main:app --reload
 pause
