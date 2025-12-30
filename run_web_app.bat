@@ -1,0 +1,9 @@
+@echo off
+echo Iniciando Orcamento Cariri MVP Web App...
+echo Instalando dependencias se necessario...
+pip install -r requirements.txt
+echo.
+echo Iniciando servidor...
+echo Acesse http://127.0.0.1:8000 no seu navegador.
+uvicorn web_app.main:app --reload
+pause

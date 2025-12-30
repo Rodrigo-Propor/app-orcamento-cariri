@@ -1,0 +1,82 @@
+<div class="space-y-4">
+    <!-- Header Info -->
+    <div class="bg-blue-50 p-3 rounded border border-blue-100">
+        <div class="text-xs text-blue-500 font-bold mb-1">{{ item.code }}</div>
+        <div class="font-semibold text-gray-800 leading-tight">{{ item.desc }}</div>
+        <div class="mt-2 flex gap-4 text-sm text-gray-600">
+            <div><span class="font-bold">Unid:</span> {{ item.unit }}</div>
+            <div><span class="font-bold">Origem:</span> {{ item.origin }}</div>
+        </div>
+    </div>
+
+    <!-- Pricing Summary -->
+    <div class="grid grid-cols-2 gap-2">
+        <div class="bg-gray-50 p-2 rounded border text-center">
+            <div class="text-xs text-gray-500 uppercase">Preço Unitário</div>
+            <div class="font-bold text-lg text-gray-800">
+                R$ {{ "%.2f"|format(item.final_unit_price) }}
+            </div>
+        </div>
+        <div class="bg-gray-50 p-2 rounded border text-center">
+            <div class="text-xs text-gray-500 uppercase">Total Item</div>
+            <div class="font-bold text-lg text-gray-800">
+                R$ {{ "%.2f"|format(item.total_price) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Composition Details -->
+    <div>
+        <h3 class="font-bold text-gray-700 border-b pb-1 mb-2 flex justify-between items-center">
+            Composição Analítica
+            <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-600">{{ composition|length }} itens</span>
+        </h3>
+        
+        {% if composition %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+                <thead class="bg-gray-50 text-gray-500 font-semibold border-b">
+                    <tr>
+                        <th class="py-1 px-1">Código</th>
+                        <th class="py-1 px-1">Descrição</th>
+                        <th class="py-1 px-1 text-right">Coef</th>
+                        <th class="py-1 px-1 text-right">Preço</th>
+                        <th class="py-1 px-1 text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for comp in composition %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-1 px-1 font-mono text-gray-500">{{ comp.code }}</td>
+                        <td class="py-1 px-1 truncate max-w-[150px] md:max-w-xl" title="{{ comp.desc }}">{{ comp.desc }}</td>
+                        <td class="py-1 px-1 text-right">{{ "%.4f"|format(comp.coef) }}</td>
+                        <td class="py-1 px-1 text-right">{{ "%.2f"|format(comp.unit_price) }}</td>
+                        <td class="py-1 px-1 text-right font-medium">{{ "%.2f"|format(comp.total) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50 font-bold border-t">
+                    <tr>
+                        <td colspan="4" class="py-1 px-1 text-right">TOTAL:</td>
+                        <td class="py-1 px-1 text-right">R$ {{ "%.2f"|format(item.final_unit_price) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-sm text-gray-500 italic p-2 text-center bg-gray-50 rounded">
+            {% if item.origin == 'PO_MANUAL' %}
+                Preço definido manualmente na PO (sem composição).
+            {% elif item.origin == 'SINAPI_DIRETO' %}
+                Preço obtido diretamente do SINAPI (sem composição expandida).
+            {% else %}
+                Nenhuma composição encontrada.
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="mt-4 pt-4 border-t text-xs text-center text-gray-400">
+        Dados calculados via SINAPI 08/2024
+    </div>
+</div>

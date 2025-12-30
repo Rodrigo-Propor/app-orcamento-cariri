@@ -1,0 +1,46 @@
+Perfeito — já deixei um **MVP funcional** seguindo exatamente a linha **FastAPI + HTMX + AG Grid + UI limpa** (com Tailwind via CDN), lendo **PO.xlsx** e **SINAPI_Referência_2024_08.xlsx** e calculando custo de composições SINAPI via **Analítico + ISD (por UF)**, com **BDI da própria PO**.
+
+[Download do projeto (zip)](sandbox:/mnt/data/orcamento_fastapi_mvp.zip)
+
+## Como rodar (Windows 11)
+
+1. Descompacte o `.zip`
+2. Abra o PowerShell na pasta do projeto
+3. Rode:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+4. Abra no navegador: `http://127.0.0.1:8000`
+
+## O que você já consegue fazer
+
+* **EAP à esquerda** (clicável + filtro)
+* **Grid central (AG Grid)** com:
+
+  * preço unitário **base**
+  * **BDI %** (da PO)
+  * preço unitário **com BDI**
+  * total **base** e **com BDI**
+  * “Origem” do preço (**CALCULADO / PO / SEM_PREÇO**)
+* **Inspetor à direita**:
+
+  * detalhes do item
+  * quebra **MAT / MO / EQP / OUT**
+  * botão **Abrir composição** (lista os itens do Analítico)
+
+## Observação importante (pra você não estranhar)
+
+No arquivo `SINAPI_Referência_2024_08.xlsx` que você mandou, a aba **CSD** está vindo com **códigos zerados** (0), então o fallback **“OFICIAL (CSD)”** praticamente não entra.
+Mesmo assim o MVP funciona porque:
+
+* se tiver **Analítico**, calcula (CALCULADO)
+* se não tiver, cai em **PO** (fallback)
+
+Se você depois colocar um SINAPI “referência” com CSD completo, o fallback OFICIAL aparece automaticamente.
+
+Se quiser, o próximo passo mais útil é eu adicionar a tela **“Insumo → onde é usado”** (com ranking de impacto por R$) + botão de **export Excel com auditoria**.
